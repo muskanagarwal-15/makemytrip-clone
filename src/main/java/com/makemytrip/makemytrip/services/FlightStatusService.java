@@ -16,9 +16,8 @@ public class FlightStatusService {
     @Autowired
     private FlightRepository flightRepository;
 
-    // ── Possible statuses and their realistic reasons ──────────────────────
     private static final String[] STATUSES = {
-            "ON_TIME", "ON_TIME", "ON_TIME",   // weighted: more ON_TIME
+            "ON_TIME", "ON_TIME", "ON_TIME",
             "DELAYED", "DELAYED",
             "BOARDING",
             "GATE_CHANGED",
@@ -61,7 +60,6 @@ public class FlightStatusService {
         });
     }
 
-    // ── Run every 30 seconds ───────────────────────────────────────────────
     @Scheduled(fixedDelay = 30000)
     public void updateFlightStatuses() {
         List<Flight> flights = flightRepository.findAll();
@@ -113,7 +111,6 @@ public class FlightStatusService {
         return result;
     }
 
-    // ── Utility: add minutes to an ISO-8601 datetime string ───────────────
     public String shiftTimePublic(String isoTime, int minutes) {
         if (isoTime == null || isoTime.isBlank()) return isoTime;
         try {

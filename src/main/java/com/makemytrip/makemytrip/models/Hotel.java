@@ -13,6 +13,8 @@ public class Hotel {
     private double pricePerNight;
     private int availableRooms;
     private String amenities;
+    private double basePricePerNight;
+    private double currentPricePerNight;
 
     public String getId() {
         return id;
@@ -60,5 +62,14 @@ public class Hotel {
 
     public void setPricePerNight(double pricePerNight) {
         this.pricePerNight = pricePerNight;
+    }
+
+    public double getBasePricePerNight() { return basePricePerNight; }
+    public void setBasePricePerNight(double v) { this.basePricePerNight = v; }
+
+    public double getCurrentPricePerNight() { return currentPricePerNight; }
+    public void setCurrentPricePerNight(double v) {
+        this.currentPricePerNight = v;
+        this.pricePerNight = v;
     }
 }

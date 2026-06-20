@@ -17,6 +17,7 @@ import {
 import { useEffect, useState } from "react";
 import { gethotel, handlehotelbooking } from "@/api";
 interface Hotel {
+  _id?: string;
   id: string; // Unique identifier for the hotel
   hotelName: string; // Name of the hotel
   location: string; // Location of the hotel
@@ -38,12 +39,18 @@ import { useDispatch, useSelector } from "react-redux";
 import SignupDialog from "@/components/SignupDialog";
 import Loader from "@/components/Loader";
 import { setUser } from "@/store";
+import PriceHistoryChart from "@/components/PriceHistoryChart";
+import { Lock } from "lucide-react";
+import { freezeHotelPrice, getActiveFreeze } from "@/api";
+
 const BookHotelPage = () => {
   const [quantity, setQuantity] = useState(1);
   const router = useRouter();
   const { id } = router.query; // Access the hotel ID from the URL
   const [hotels, sethotels] = useState<Hotel[]>([]);
   const [loading, setLoading] = useState(true);
+  const [freeze, setFreeze] = useState<any>(null);
+  const [freezeLoading, setFreezeLoading] = useState(false);
   const user = useSelector((state: any) => state.user.user);
   const [open, setopem] = useState(false);
   const dispatch = useDispatch();
@@ -53,6 +60,14 @@ const BookHotelPage = () => {
         const data = await gethotel();
         const filteredData = data.filter((hotel: any) => hotel._id === id);
         sethotels(filteredData);
+        if (user && filteredData[0]) {
+          getActiveFreeze(
+            user.id,
+            filteredData[0]._id ?? filteredData[0].id,
+          ).then((f) => {
+            if (f && f.frozenPrice) setFreeze(f);
+          });
+        }
       } catch (error) {
         console.error("Error fetching flights:", error);
       } finally {
@@ -134,6 +149,16 @@ const BookHotelPage = () => {
       router.push("/profile");
     } catch (error) {
       console.log(error);
+    }
+  };
+  const handleFreeze = async () => {
+    if (!user || !hotels[0]) return;
+    setFreezeLoading(true);
+    try {
+      const f = await freezeHotelPrice(user.id, hotels[0]._id ?? hotels[0].id);
+      setFreeze(f);
+    } finally {
+      setFreezeLoading(false);
     }
   };
   const HotelContent = () => (

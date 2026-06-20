@@ -23,7 +23,8 @@ public class Flight {
     private long   lastUpdated  = System.currentTimeMillis();
     private String gate;
     private boolean adminLocked = false;
-
+    private double basePrice;       // original seed price, never changes
+    private double currentPrice;    // what users see — updated by pricing engine
 
     // Getters and Setters
 
@@ -114,4 +115,13 @@ public class Flight {
 
     public boolean isAdminLocked() { return adminLocked; }
     public void setAdminLocked(boolean adminLocked) { this.adminLocked = adminLocked; }
+
+    public double getBasePrice() { return basePrice; }
+    public void setBasePrice(double basePrice) { this.basePrice = basePrice; }
+
+    public double getCurrentPrice() { return currentPrice; }
+    public void setCurrentPrice(double currentPrice) {
+        this.currentPrice = currentPrice;
+        this.price = currentPrice; // keep legacy field in sync
+    }
 }

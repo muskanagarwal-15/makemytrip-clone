@@ -9,6 +9,8 @@ import com.makemytrip.makemytrip.repositories.HotelRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.util.UUID;
+import com.makemytrip.makemytrip.services.PricingService;
+import com.makemytrip.makemytrip.models.PriceFreeze;
 
 import java.time.LocalDate;
 import java.util.Optional;
@@ -23,6 +25,9 @@ public class BookingService {
 
     @Autowired
     private HotelRepository hotelRepository;
+
+    @Autowired
+    private PricingService pricingService;
 
     public Booking bookFlight(String userId,String flightId,int seats,double price){
         Optional<Users> usersOptional =userRepository.findById(userId);
@@ -40,7 +45,17 @@ public class BookingService {
                 booking.setResourceId(flightId);
                 booking.setDate(LocalDate.now().toString());
                 booking.setQuantity(seats);
-                booking.setTotalPrice(price);
+                double effectivePrice = (flight.getCurrentPrice() > 0)
+                        ? flight.getCurrentPrice() * seats
+                        : price;
+                Optional<PriceFreeze> freeze = pricingService.getActiveFreeze(userId, flightId);
+                if (freeze.isPresent()) {
+                    booking.setTotalPrice(freeze.get().getFrozenPrice() * seats);
+                    pricingService.consumeFreeze(freeze.get().getId());
+                } else {
+                    double live = flight.getCurrentPrice() > 0 ? flight.getCurrentPrice() : price;
+                    booking.setTotalPrice(live * seats);
+                }
                 user.getBookings().add(booking);
                 userRepository.save(user);
                 return booking;
@@ -66,7 +81,17 @@ public class BookingService {
                 booking.setResourceId(hotelId);
                 booking.setDate(LocalDate.now().toString());
                 booking.setQuantity(rooms);
-                booking.setTotalPrice(price);
+                double effectivePrice = (hotel.getCurrentPricePerNight() > 0)
+                        ? hotel.getCurrentPricePerNight() * rooms
+                        : price;
+                Optional<PriceFreeze> freeze = pricingService.getActiveFreeze(userId, hotelId);
+                if (freeze.isPresent()) {
+                    booking.setTotalPrice(freeze.get().getFrozenPrice() * rooms);
+                    pricingService.consumeFreeze(freeze.get().getId());
+                } else {
+                    double live = hotel.getCurrentPricePerNight() > 0 ? hotel.getCurrentPricePerNight() : price;
+                    booking.setTotalPrice(live * rooms);
+                }
                 user.getBookings().add(booking);
                 userRepository.save(user);
                 return booking;

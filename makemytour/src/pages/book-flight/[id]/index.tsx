@@ -50,6 +50,10 @@ import { Ticket } from "lucide-react";
 import SignupDialog from "@/components/SignupDialog";
 import Loader from "@/components/Loader";
 import { setUser } from "@/store";
+import PriceHistoryChart from "@/components/PriceHistoryChart";
+import { Lock } from "lucide-react";
+import { freezeFlightPrice, getActiveFreeze } from "@/api";
+
 const BookFlightPage = () => {
   const router = useRouter();
   const { id } = router.query;
@@ -58,6 +62,8 @@ const BookFlightPage = () => {
   const [quantity, setQuantity] = useState(1);
   const [open, setopem] = useState(false);
   const [liveStatus, setLiveStatus] = useState<any>(null);
+  const [freeze, setFreeze] = useState<any>(null);
+  const [freezeLoading, setFreezeLoading] = useState(false);
   const flightIdRef = useRef<string | null>(null);
   const user = useSelector((state: any) => state.user.user);
   const dispatch = useDispatch();
@@ -69,6 +75,12 @@ const BookFlightPage = () => {
           (flight: any) => String(flight._id ?? flight.id) === String(id),
         );
         setFlights(filteredData);
+        if (user && filteredData[0]) {
+          const fId = filteredData[0]._id ?? filteredData[0].id;
+          getActiveFreeze(user.id, fId).then((f) => {
+            if (f && f.frozenPrice) setFreeze(f);
+          });
+        }
         flightIdRef.current =
           filteredData[0]?._id ?? filteredData[0]?.id ?? null;
         if (filteredData.length > 0) {
@@ -210,6 +222,17 @@ const BookFlightPage = () => {
       router.push("/profile");
     } catch (error) {
       console.log(error);
+    }
+  };
+
+  const handleFreeze = async () => {
+    if (!user || !flight) return;
+    setFreezeLoading(true);
+    try {
+      const f = await freezeFlightPrice(user.id, flight._id ?? flight.id);
+      setFreeze(f);
+    } finally {
+      setFreezeLoading(false);
     }
   };
   const BookingContent = () => (
@@ -673,6 +696,36 @@ const BookFlightPage = () => {
                   </div>
                 </div>
               </div>
+              {/* Price History Chart */}
+              <PriceHistoryChart resourceId={flight._id ?? flight.id} />
+
+              {/* Freeze banner if active */}
+              {freeze && freeze.frozenPrice && (
+                <div className="mt-4 flex items-center justify-between bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm">
+                  <span className="flex items-center gap-2 text-amber-800 font-medium">
+                    <Lock className="w-4 h-4" /> Locked at ₹
+                    {freeze.frozenPrice.toLocaleString("en-IN")}
+                  </span>
+                  <span className="text-xs text-amber-600">
+                    {new Date(freeze.expiresAt).toLocaleTimeString("en-IN", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </span>
+                </div>
+              )}
+
+              {/* Freeze button */}
+              {user && !freeze && (
+                <button
+                  onClick={handleFreeze}
+                  disabled={freezeLoading}
+                  className="w-full mt-4 py-2 border border-red-300 text-red-600 text-sm font-medium rounded-lg hover:bg-red-50 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  <Lock className="w-4 h-4" />
+                  {freezeLoading ? "Locking price…" : "Freeze Price for 30 min"}
+                </button>
+              )}
               <Dialog open={open} onOpenChange={setopem}>
                 <DialogTrigger asChild>
                   <Button className="w-full bg-red-600 text-white">

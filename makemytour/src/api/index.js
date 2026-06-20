@@ -1,7 +1,8 @@
 import axios from "axios";
 
 //url from render
-const BACKEND_URL = "https://makemytrip-clone-springboot.onrender.com";
+// const BACKEND_URL = "https://makemytrip-clone-springboot.onrender.com";
+const BACKEND_URL = "http://localhost:8080";
 
 export const login = async (email, password) => {
   try {
@@ -286,5 +287,80 @@ export const updateFlightStatus = async (
     return res.data;
   } catch (error) {
     console.log(error);
+  }
+};
+
+// ── Dynamic Pricing ──────────────────────────────────────────────────────────
+
+export const getPriceHistory = async (resourceId) => {
+  try {
+    const res = await axios.get(`${BACKEND_URL}/pricing/history/${resourceId}`);
+    return res.data; // array of { price, multiplier, reason, timestamp }
+  } catch (error) {
+    console.log(error);
+    return [];
+  }
+};
+
+export const triggerPriceRecalculation = async (userRole) => {
+  try {
+    const res = await axios.post(
+      `${BACKEND_URL}/pricing/recalculate`,
+      {},
+      { headers: { "X-User-Role": userRole } }
+    );
+    return res.data;
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+// ── Price Freeze ─────────────────────────────────────────────────────────────
+
+export const freezeFlightPrice = async (userId, flightId) => {
+  try {
+    const res = await axios.post(`${BACKEND_URL}/pricing/freeze/flight`, {
+      userId,
+      flightId,
+    });
+    return res.data; // { id, frozenPrice, expiresAt, status, ... }
+  } catch (error) {
+    console.log(error);
+    throw error;
+  }
+};
+
+export const freezeHotelPrice = async (userId, hotelId) => {
+  try {
+    const res = await axios.post(`${BACKEND_URL}/pricing/freeze/hotel`, {
+      userId,
+      hotelId,
+    });
+    return res.data;
+  } catch (error) {
+    console.log(error);
+    throw error;
+  }
+};
+
+export const getActiveFreeze = async (userId, resourceId) => {
+  try {
+    const res = await axios.get(
+      `${BACKEND_URL}/pricing/freeze/active?userId=${userId}&resourceId=${resourceId}`
+    );
+    return res.data; // PriceFreeze object or { active: false }
+  } catch (error) {
+    console.log(error);
+    return { active: false };
+  }
+};
+
+export const getUserFreezes = async (userId) => {
+  try {
+    const res = await axios.get(`${BACKEND_URL}/pricing/freeze/user/${userId}`);
+    return res.data; // array of PriceFreeze
+  } catch (error) {
+    console.log(error);
+    return [];
   }
 };
