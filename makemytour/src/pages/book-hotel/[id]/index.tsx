@@ -75,6 +75,13 @@ const BookHotelPage = () => {
       }
     };
     fetchhotels();
+    const interval = setInterval(async () => {
+      if (!id) return;
+      const data = await gethotel();
+      const updated = data.filter((h: any) => h._id === id);
+      if (updated.length > 0) sethotels(updated);
+    }, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   if (loading) {

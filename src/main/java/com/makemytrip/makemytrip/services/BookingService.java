@@ -45,9 +45,6 @@ public class BookingService {
                 booking.setResourceId(flightId);
                 booking.setDate(LocalDate.now().toString());
                 booking.setQuantity(seats);
-                double effectivePrice = (flight.getCurrentPrice() > 0)
-                        ? flight.getCurrentPrice() * seats
-                        : price;
                 Optional<PriceFreeze> freeze = pricingService.getActiveFreeze(userId, flightId);
                 if (freeze.isPresent()) {
                     booking.setTotalPrice(freeze.get().getFrozenPrice() * seats);
@@ -81,9 +78,6 @@ public class BookingService {
                 booking.setResourceId(hotelId);
                 booking.setDate(LocalDate.now().toString());
                 booking.setQuantity(rooms);
-                double effectivePrice = (hotel.getCurrentPricePerNight() > 0)
-                        ? hotel.getCurrentPricePerNight() * rooms
-                        : price;
                 Optional<PriceFreeze> freeze = pricingService.getActiveFreeze(userId, hotelId);
                 if (freeze.isPresent()) {
                     booking.setTotalPrice(freeze.get().getFrozenPrice() * rooms);

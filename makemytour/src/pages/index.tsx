@@ -301,7 +301,7 @@ export default function Home() {
                           Arrival Time: {formatDate(result.arrivalTime)}
                         </p>
                         <p className="text-lg font-bold mt-2">
-                          ₹{result.price}
+                          ₹{result.currentPrice > 0 ? result.currentPrice : result.price}
                         </p>
                         <Button
                           className="w-full mt-4"
@@ -317,7 +317,7 @@ export default function Home() {
                         </h3>
                         <p className="text-gray-600">City: {result.location}</p>
                         <p className="text-lg font-bold mt-2">
-                          ₹{result.pricePerNight} per night
+                          ₹{result.currentPricePerNight > 0 ? result.currentPricePerNight : result.pricePerNight} per night
                         </p>
                         <Button
                           className="w-full mt-4"

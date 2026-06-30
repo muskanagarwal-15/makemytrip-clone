@@ -13,9 +13,9 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import java.time.Month;
 import java.util.List;
 import java.util.Optional;
+import java.time.DayOfWeek;
 
 @Service
 public class PricingService {
@@ -35,12 +35,12 @@ public class PricingService {
     }
 
     public double computeFlightMultiplier(Flight flight) {
-        double m = seasonalFactor() * demandFactor(flight.getAvailableSeats(), 180);
+        double m = seasonalFactor() * weekendFactor() * demandFactor(flight.getAvailableSeats(), 180);
         return Math.round(m * 100.0) / 100.0;
     }
 
     public double computeHotelMultiplier(Hotel hotel) {
-        double m = seasonalFactor() * demandFactor(hotel.getAvailableRooms(), 50);
+        double m = seasonalFactor() * weekendFactor() * demandFactor(hotel.getAvailableRooms(), 50);
         return Math.round(m * 100.0) / 100.0;
     }
 
@@ -53,7 +53,7 @@ public class PricingService {
                 .findByResourceIdAndTimestampGreaterThanOrderByTimestampAsc(resourceId, sinceMs);
     }
 
-    @Scheduled(fixedDelay = 5 * 60 * 1000)
+    @Scheduled(fixedDelay = 30 * 12 * 60 * 1000)
     public void scheduledRecalculation() {
         recalculateAll();
     }
@@ -65,8 +65,9 @@ public class PricingService {
             double newPrice   = Math.round(flight.getBasePrice() * multiplier * 100.0) / 100.0;
             flight.setCurrentPrice(newPrice);
             flightRepository.save(flight);
+            boolean isWeekend = weekendFactor() > 1.0;
             snapshotRepository.save(new PriceSnapshot(
-                    flight.getId(), "FLIGHT", newPrice, multiplier, reasonLabel(multiplier)
+                    flight.getId(), "FLIGHT", newPrice, multiplier, reasonLabel(multiplier, isWeekend)
             ));
         }
     }
@@ -78,8 +79,9 @@ public class PricingService {
             double newPrice   = Math.round(hotel.getBasePricePerNight() * multiplier * 100.0) / 100.0;
             hotel.setCurrentPricePerNight(newPrice);
             hotelRepository.save(hotel);
+            boolean isWeekend = weekendFactor() > 1.0;
             snapshotRepository.save(new PriceSnapshot(
-                    hotel.getId(), "HOTEL", newPrice, multiplier, reasonLabel(multiplier)
+                    hotel.getId(), "HOTEL", newPrice, multiplier, reasonLabel(multiplier, isWeekend)
             ));
         }
     }
@@ -93,6 +95,13 @@ public class PricingService {
         };
     }
 
+    private double weekendFactor() {
+        DayOfWeek day = LocalDate.now().getDayOfWeek();
+        return (day == DayOfWeek.FRIDAY || day == DayOfWeek.SATURDAY || day == DayOfWeek.SUNDAY)
+                ? 1.10
+                : 1.00;
+    }
+
     private double demandFactor(int remaining, int capacity) {
         double fillRate = 1.0 - ((double) remaining / capacity);
         if (fillRate > 0.90) return 1.30;
@@ -102,7 +111,8 @@ public class PricingService {
         return 1.00;
     }
 
-    private String reasonLabel(double m) {
+    private String reasonLabel(double m, boolean isWeekend) {
+        if (isWeekend && m >= 1.10) return "WEEKEND_SURCHARGE";
         if (m >= 1.20) return "HIGH_DEMAND";
         if (m >= 1.10) return "MODERATE_DEMAND";
         if (m <= 0.90) return "LOW_DEMAND";
@@ -163,7 +173,7 @@ public class PricingService {
         return freezeRepository.findByUserIdOrderByCreatedAtDesc(userId);
     }
 
-    @Scheduled(fixedDelay = 5 * 60 * 1000)
+    @Scheduled(fixedDelay = 30 * 60 * 1000)
     public void expireOldFreezes() {
         long now = System.currentTimeMillis();
         for (PriceFreeze f : freezeRepository.findByStatus(PriceFreeze.Status.ACTIVE)) {

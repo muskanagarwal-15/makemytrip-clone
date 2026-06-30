@@ -100,6 +100,13 @@ const BookFlightPage = () => {
       if (!id) return;
       const statusData = await getFlightStatus(id as string);
       if (statusData) setLiveStatus(statusData);
+
+      // Refresh price in case the pricing engine updated it
+      const data = await getflight();
+      const updated = data.filter(
+        (f: any) => String(f._id ?? f.id) === String(id),
+      );
+      if (updated.length > 0) setFlights(updated);
     }, 30000);
     return () => clearInterval(interval);
   }, [id, user]);
@@ -723,7 +730,7 @@ const BookFlightPage = () => {
                   className="w-full mt-4 py-2 border border-red-300 text-red-600 text-sm font-medium rounded-lg hover:bg-red-50 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   <Lock className="w-4 h-4" />
-                  {freezeLoading ? "Locking price…" : "Freeze Price for 30 min"}
+                  {freezeLoading ? "Locking price…" : "Freeze Price"}
                 </button>
               )}
               <Dialog open={open} onOpenChange={setopem}>
